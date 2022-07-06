@@ -42,8 +42,10 @@ class Geometry:
     tf = Transform(self.x, self.y, 0, self.hdg, 0, 0)
 
     points = []
+    print("delta_s %.2f sample_count %d" % (delta_s, sample_count))
     for i in range(sample_count):
       s, t, h = i * delta_s, 0, 0
+      s = min(s, self.length)
       x, y, z = tf.transform(s, t, h)
 
       absolute_s = self.s + s
@@ -75,6 +77,7 @@ class Spiral(Geometry):
     points = []
     for i in range(sample_count):
       local_s = i * delta_s
+      local_s = min(local_s, self.length)
       s, t, theta = odr_spiral(local_s, cdot)
       x, y, z = tf.transform(s, t, 0.0)
 
@@ -104,6 +107,7 @@ class Arc(Geometry):
     points = []
     for i in range(sample_count):
       local_s = i * delta_s
+      local_s = min(local_s, self.length)
       s, t, theta = odr_arc(local_s, self.curvature)
       x, y, z = tf.transform(s, t, 0.0)
 
@@ -135,8 +139,9 @@ class Poly3(Geometry):
     self.d = float(raw_poly3.attrib.get('d'))
 
   def sampling(self, delta_s):
+    print("Unsupport Geometry type, need Implement sampling method!")
     sample_count = math.ceil(self.length / delta_s) + 1
-    pass
+    return []
 
 
 class ParamPoly3(Geometry):
@@ -168,9 +173,40 @@ class ParamPoly3(Geometry):
     self.dV = float(raw_param_poly3.attrib.get('dV'))
     self.pRange = raw_param_poly3.attrib.get('pRange')
 
+  def theta(self, p):
+    p2 = p * p
+    dUdp = 3 * self.dU * p2 + 2 * self.cU * p + self.bU
+    dVdp = 3 * self.dV * p2 + 2 * self.cV * p + self.bV
+    return math.atan(dUdp/dUdp) if dUdp != 0 else 0
+
+  def U(self, p):
+    p2 = p * p
+    p3 = p * p * p
+    return self.dU * p3 + self.cU * p2 + self.bU * p + self.aU
+
+  def V(self, p):
+    p2 = p * p
+    p3 = p * p * p
+    return self.dV * p3 + self.cV * p2 + self.bV * p + self.aV
+
   def sampling(self, delta_s):
     sample_count = math.ceil(self.length / delta_s) + 1
-    pass
+    tf = Transform(self.x, self.y, 0, self.hdg, 0, 0)
+
+    points = []
+    for i in range(sample_count):
+      p = i / float(sample_count - 1);
+      p = max(p, 0.0)
+      p = min(p, 1.0)
+      u = self.U(p)
+      v = self.V(p)
+      x, y, z = tf.transform(u, v, 0.0)
+
+      absolute_s = self.s + self.length * p
+      point3d = Point3d(x, y, z, absolute_s)
+      point3d.set_rotate(self.hdg + self.theta(p))
+      points.append(point3d)
+    return points
 
 
 class PlanView:

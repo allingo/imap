@@ -32,21 +32,24 @@ class Map:
     # add link
     for road_id, road in self.roads.items():
       # Todo(zero):
-      if road.link.predecessor.element_type == "junction":
-        road.link.predecessor_junction = \
-            self.junctions[road.link.predecessor.element_id]
-      elif road.link.predecessor.element_type == "road":
-        road.link.predecessor_road = self.roads[road.link.predecessor.element_id]
+      predecessor_id = road.link.predecessor.element_id
+      successor_id = road.link.successor.element_id
+      if predecessor_id in self.junctions:
+        if road.link.predecessor.element_type == "junction":
+          road.link.predecessor_junction = self.junctions[predecessor_id]
+      if predecessor_id in self.roads:
+        if road.link.predecessor.element_type == "road":
+          road.link.predecessor_road = self.roads[predecessor_id]
 
-      if road.link.successor.element_type == "junction":
-        road.link.successor_junction = \
-            self.junctions[road.link.successor.element_id]
-      elif road.link.successor.element_type == "road":
-        road.link.successor_road = self.roads[road.link.successor.element_id]
+      if successor_id in self.junctions:
+        if road.link.successor.element_type == "junction":
+          road.link.successor_junction = self.junctions[successor_id]
+      if successor_id in self.roads:
+        if road.link.successor.element_type == "road":
+          road.link.successor_road = self.roads[successor_id]
 
       # add connect relation in junctions
       if road.junction_id != "-1":
-        successor_id = road.link.successor.element_id
         if not self.junctions[road.junction_id].is_incoming_road( \
                   successor_id, road.road_id):
           if successor_id not in self.junctions[road.junction_id].predecessor_dict:
@@ -54,7 +57,6 @@ class Map:
           self.junctions[road.junction_id].predecessor_dict[successor_id]. \
               append([road, "successor"])
 
-        predecessor_id = road.link.predecessor.element_id
         if not self.junctions[road.junction_id].is_incoming_road( \
                   predecessor_id, road.road_id):
           if predecessor_id not in self.junctions[road.junction_id].predecessor_dict:
@@ -64,13 +66,13 @@ class Map:
 
       # add connected roads to junctions
       if road.link.predecessor.element_type == "junction":
-        junction_id = road.link.predecessor.element_id
-        connected_roads = self.junctions[junction_id].connected_roads
-        connected_roads.append([road, "predecessor"])
+        if predecessor_id in self.junctions:
+          connected_roads = self.junctions[predecessor_id].connected_roads
+          connected_roads.append([road, "predecessor"])
       if road.link.successor.element_type == "junction":
-        junction_id = road.link.successor.element_id
-        connected_roads = self.junctions[junction_id].connected_roads
-        connected_roads.append([road, "successor"])
+        if successor_id in self.junctions:
+          connected_roads = self.junctions[successor_id].connected_roads
+          connected_roads.append([road, "successor"])
 
     # add junction link
     for junction_id, junction in self.junctions.items():

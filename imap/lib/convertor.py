@@ -110,7 +110,11 @@ class Opendrive2Apollo(Convertor):
       self.pb_map.header.top = self.xodr_map.header.north
     if self.xodr_map.header.south:
       self.pb_map.header.bottom = self.xodr_map.header.south
-    self.pb_map.header.vendor = self.xodr_map.header.vendor
+    if self.xodr_map.header.vendor:
+      self.pb_map.header.vendor = self.xodr_map.header.vendor
+    else:
+      vendor = b"IMAP"
+      self.pb_map.header.vendor = vendor
 
 
   def add_basic_info(self, pb_lane, xodr_road, idx, lane):
@@ -122,6 +126,20 @@ class Opendrive2Apollo(Convertor):
       pb_lane.speed_limit = lane.speed.max_v
     pb_lane.direction = map_lane_pb2.Lane.FORWARD
 
+
+  def roadMarkType2BoundaryType(self, roadmark_type):
+    if roadmark_type == "botts dots":
+      return map_lane_pb2.LaneBoundaryType.DOUBLE_YELLOW
+    elif roadmark_type == "broken broken":
+      return map_lane_pb2.LaneBoundaryType.DOUBLE_YELLOW
+    elif roadmark_type == "broken solid":
+      return map_lane_pb2.LaneBoundaryType.SOLID_YELLOW
+    elif roadmark_type == "broken":
+      return map_lane_pb2.LaneBoundaryType.DOTTED_WHITE
+    elif roadmark_type == "solid":
+      return map_lane_pb2.LaneBoundaryType.SOLID_WHITE
+    else:
+      return map_lane_pb2.LaneBoundaryType.UNKNOWN
 
   def add_lane_boundary(self, pb_lane, lane):
     # 1. left boundary
@@ -135,6 +153,12 @@ class Opendrive2Apollo(Convertor):
     segment.start_position.z = lane.left_boundary[0].z
     segment.length = pb_lane.length
     pb_lane.left_boundary.length = pb_lane.length
+    # TODO: set corrent boundary type.
+    for road_mark in lane.road_marks:
+      boundary_type = pb_lane.left_boundary.boundary_type.add()
+      boundary_type.s = road_mark.sOffset
+      boundary_type.types.append(
+          self.roadMarkType2BoundaryType(road_mark.roadmark_type))
 
     # 2. center line
     segment = pb_lane.central_curve.segment.add()
@@ -158,7 +182,12 @@ class Opendrive2Apollo(Convertor):
     segment.start_position.z = lane.right_boundary[0].z
     segment.length = pb_lane.length
     pb_lane.right_boundary.length = pb_lane.length
-
+    # TODO: set corrent boundary type.
+    for road_mark in lane.road_marks:
+      boundary_type = pb_lane.right_boundary.boundary_type.add()
+      boundary_type.s = road_mark.sOffset
+      boundary_type.types.append(
+          self.roadMarkType2BoundaryType(road_mark.roadmark_type))
 
   def add_lane_sample(self, pb_lane, lane):
     cur_lane_id = int(lane.lane_id)
