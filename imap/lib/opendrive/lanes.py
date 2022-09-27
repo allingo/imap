@@ -158,7 +158,9 @@ class Lane:
     self.left_neighbor_reverse = []
     self.right_neighbor_reverse = []
     self.left_boundary = []
+    self.left_boundary_road_marks = []
     self.right_boundary = []
+    self.right_boundary_road_marks = []
     self.center_line = []
 
 
@@ -206,8 +208,9 @@ class Lane:
     ds = s - self.widths[idx].sOffset
     return a + b*ds + c*ds**2 + d*ds**3
 
-  def generate_boundary(self, left_boundary):
+  def generate_boundary(self, left_boundary, left_boundary_road_marks):
     self.left_boundary = left_boundary
+    self.left_boundary_road_marks = left_boundary_road_marks
     for point3d in left_boundary:
       width = self.get_width_by_s(point3d.s)
 
@@ -216,6 +219,7 @@ class Lane:
 
       cpoint3d = shift_t(point3d, width * self.direction / 2)
       self.center_line.append(cpoint3d)
+    self.right_boundary_road_marks = self.road_marks
 
     # TODO(zero): debug use
     if self.lane_type == "driving":
@@ -224,7 +228,7 @@ class Lane:
     else:
       draw_line(self.left_boundary)
       draw_line(self.right_boundary)
-    return self.right_boundary
+    return self.right_boundary, self.right_boundary_road_marks
 
 
 class LaneSection:
@@ -301,14 +305,17 @@ class LaneSection:
 
   def process_lane(self, reference_line):
     left_boundary = reference_line.copy()
+    left_boundary_road_marks = self.center.road_marks
     # The left lane is opposite to the reference line
     left_boundary.reverse()
     for lane in self.left[::-1]:
-      left_boundary = lane.generate_boundary(left_boundary)
+      left_boundary, left_boundary_road_marks = \
+        lane.generate_boundary(left_boundary, left_boundary_road_marks)
 
     left_boundary = reference_line.copy()
     for lane in self.right:
-      left_boundary = lane.generate_boundary(left_boundary)
+      left_boundary, left_boundary_road_marks = \
+        lane.generate_boundary(left_boundary, left_boundary_road_marks)
 
   def get_cross_section(self, direction):
     if direction == "start":

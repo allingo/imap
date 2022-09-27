@@ -138,6 +138,8 @@ class Opendrive2Apollo(Convertor):
       return map_lane_pb2.LaneBoundaryType.DOTTED_WHITE
     elif roadmark_type == "solid":
       return map_lane_pb2.LaneBoundaryType.SOLID_WHITE
+    elif roadmark_type == "none":
+      return map_lane_pb2.LaneBoundaryType.DOTTED_WHITE
     else:
       return map_lane_pb2.LaneBoundaryType.UNKNOWN
 
@@ -153,8 +155,8 @@ class Opendrive2Apollo(Convertor):
     segment.start_position.z = lane.left_boundary[0].z
     segment.length = pb_lane.length
     pb_lane.left_boundary.length = pb_lane.length
-    # TODO: set corrent boundary type.
-    for road_mark in lane.road_marks:
+    # set boundary type.
+    for road_mark in lane.left_boundary_road_marks:
       boundary_type = pb_lane.left_boundary.boundary_type.add()
       boundary_type.s = road_mark.sOffset
       boundary_type.types.append(
@@ -182,8 +184,8 @@ class Opendrive2Apollo(Convertor):
     segment.start_position.z = lane.right_boundary[0].z
     segment.length = pb_lane.length
     pb_lane.right_boundary.length = pb_lane.length
-    # TODO: set corrent boundary type.
-    for road_mark in lane.road_marks:
+    # set boundary type.
+    for road_mark in lane.right_boundary_road_marks:
       boundary_type = pb_lane.right_boundary.boundary_type.add()
       boundary_type.s = road_mark.sOffset
       boundary_type.types.append(
